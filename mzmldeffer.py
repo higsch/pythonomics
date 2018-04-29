@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 
 # Creates a textfile suitable for mzML definition in Lehtiö's proteogenomics pipeline.
+#
+# in file:    each line comprises absolute path to mzML (each mzML is in a directory specifying its set)
+#             file can be created by find /path/to/set_directories/ -name '*.mzML' > in_file.txt
+# out file:   new file with meta information
+# strip name: name of HiRIEF strip (e.g. '3-10')
+#
+# Matthias Stahl, 2018
 
 import sys
 
