@@ -9,8 +9,11 @@ import sys
 import sqlite3
 from sqlite3 import Error
 import networkx as nx
+from networkx.readwrite import json_graph
+import json
 
-default_database_file = "target_psmlookup.sql"
+database_file = "target_psmlookup.sql"
+file_name = "network.json"
 
 def _create_connection(database_file):
     """ creates a database connection to the SQLite database
@@ -26,21 +29,9 @@ def _create_connection(database_file):
  
     return None
 
-
-def buildInferenceNetwork(database_file = default_database_file):
-    """ builds the JSON lookup and handles database connection
-    :param database_file: database file
-    :return: bool if built was successful
-    """
-    
-    # generate new graph
-    G = nx.Graph()
-    
-    # connect to database and fetch relevant linkages
-    conn = _create_connection(database_file = database_file)
+def _fetchPSMs2Peptide(conn):
     cur = conn.cursor()
     
-    # first go for the psm to peptide linkage
     query = "SELECT psms.psm_id, peptide_sequences.sequence " \
             "FROM psms " \
             "INNER JOIN peptide_sequences " \
@@ -48,7 +39,11 @@ def buildInferenceNetwork(database_file = default_database_file):
     cur.execute(query)
     psms_to_peptide = cur.fetchall()
     
-    # next go for the peptides to proteins association
+    return(psms_to_peptide)
+    
+def _fetchPeptides2Proteins(conn):
+    cur = conn.cursor()
+    
     query = "SELECT peptide_sequences.sequence, protein_psm.protein_acc " \
             "FROM protein_psm " \
             "INNER JOIN psms " \
@@ -57,8 +52,12 @@ def buildInferenceNetwork(database_file = default_database_file):
             "ON psms.pep_id = peptide_sequences.pep_id"
     cur.execute(query)
     peptides_to_proteins = cur.fetchall()
+
+    return(peptides_to_proteins)
     
-    # finally the protein to proteon group linkage
+def _fetchProteins2ProteinGroup(conn):
+    cur = conn.cursor()
+    
     query = "SELECT protein_group_content.protein_acc, protein_group_master.protein_acc " \
             "FROM protein_group_content " \
             "INNER JOIN protein_group_master " \
@@ -66,20 +65,57 @@ def buildInferenceNetwork(database_file = default_database_file):
     cur.execute(query)
     proteins_to_protein_group = cur.fetchall()
     
+    return(proteins_to_protein_group)
+
+def buildInferenceNetwork(database_file = default_database_file):
+    """ builds the JSON lookup and handles database connection
+    :param database_file: database file
+    :return: bool if built was successful
+    """
+    
+    # generate new graph
+    G = nx.DiGraph()
+    
+    # connect to database and fetch relevant linkages
+    conn = _create_connection(database_file = database_file)
+    
+    # fetch data and gradually build graph
+    G.add_edges_from(_fetchPeptides2Proteins(conn))
+    G.add_edges_from(_fetchPeptides2Proteins(conn))
+    G.add_edges_from(_fetchProteins2ProteinGroup(conn))
+    
+    # close database connection
     conn.close()
-    return(True)
+    
+    return(G)
+    
+def saveNetwork(G, file_name):
+    data = json_graph.node_link_data(G)
+    
+    try:
+        with open(file_name, 'w') as outfile:
+            json.dump(json.dumps(data), outfile)
+        return(True)
+    except IOError:
+        return(False)
 
 if __name__ == "__main__":
     # look for command line arguments
     if (len(sys.argv) > 1):
         database_file = sys.argv[1]
-    else:
-        print("No database file given. Will use " + default_database_file + " file.")
-        database_file = default_database_file
+    if (len(sys.argv) > 2):
+        file_name = sys.argv[2]
     
-    # build network
-    if (buildInferenceNetwork(database_file)):
-        print("JSON lookup was successfully built.")
+    # build graph
+    G = buildInferenceNetwork(database_file)
+    if (G is None):
+        print("An error occurred during graph creation!")
+        return(1)
+    
+    # save graph
+    if (saveNetwork(G, file_name)):
+        print("Graph was saved to " + file_name + ".")
+        return(0)
     else:
-        print("An error occurred during JSON lookup construction.")
-        
+        print("An error occurred during saving!")
+        return(1)
