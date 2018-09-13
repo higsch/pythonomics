@@ -9,7 +9,6 @@ import sys
 import sqlite3
 from sqlite3 import Error
 import networkx as nx
-from networkx.readwrite import json_graph
 import json
 
 database_file = "target_psmlookup.sql"
@@ -83,7 +82,8 @@ def _addProteinAttributes(conn):
     query = "SELECT protein_seq.protein_acc, protein_seq.sequence, prot_desc.description " \
             "FROM protein_seq " \
             "INNER JOIN prot_desc ON protein_seq.protein_acc = prot_desc.protein_acc"
-    attributes = [(protein_alias + tuple[0], {"sequence": tuple[1], "description": tuple[2]}) for tuple in cur.execute(query)]
+    #attributes = [(protein_alias + tuple[0], {"sequence": tuple[1], "description": tuple[2]}) for tuple in cur.execute(query)]
+    attributes = [(protein_alias + tuple[0], {"sequence": "", "description": tuple[2]}) for tuple in cur.execute(query)]
     
     return(attributes)
     
@@ -99,7 +99,7 @@ def _addProteinGroupAttributes(conn):
     
     return(attributes)
 
-def buildInferenceNetwork(database_file = default_database_file):
+def buildInferenceNetwork(database_file = database_file, add_attributes = False):
     """ builds the JSON lookup and handles database connection
     :param database_file: database file
     :return: bool if built was successful
@@ -117,10 +117,11 @@ def buildInferenceNetwork(database_file = default_database_file):
     G.add_edges_from(_fetchProteins2ProteinGroup(conn))
     
     # add meta information to nodes
-    G.add_nodes_from(_addPSMAttributes(conn))
-    G.add_nodes_from(_addPeptideAttributes(conn))
-    G.add_nodes_from(_addProteinAttributes(conn))
-    G.add_nodes_from(_addProteinGroupAttributes(conn))
+    if (add_attributes):
+        G.add_nodes_from(_addPSMAttributes(conn))
+        G.add_nodes_from(_addPeptideAttributes(conn))
+        G.add_nodes_from(_addProteinAttributes(conn))
+        G.add_nodes_from(_addProteinGroupAttributes(conn))
     
     # close database connection
     conn.close()
@@ -146,6 +147,7 @@ if __name__ == "__main__":
     
     # build graph
     G = buildInferenceNetwork(database_file)
+    nx.write_graphml(G, file_name)
     if (G is None):
         print("An error occurred during graph creation!")
         exit(1)
@@ -157,3 +159,4 @@ if __name__ == "__main__":
     else:
         print("An error occurred during saving!")
         exit(1)
+        
