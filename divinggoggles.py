@@ -103,14 +103,14 @@ def buildInferenceGraph(database_file = database_file, add_psms = False, add_att
     conn = _create_connection(database_file = database_file)
     
     # fetch data and gradually build graph
-    if (add_psms):
-        G.add_edges_from(_fetchPeptides2Proteins(conn))
+    if (add_psms == True):
+        G.add_edges_from(_fetchPSMs2Peptide(conn))
         
     G.add_edges_from(_fetchPeptides2Proteins(conn))
     G.add_edges_from(_fetchProteins2ProteinGroup(conn))
     
     # add meta information to nodes
-    if (add_attributes):
+    if (add_attributes == True):
         G.add_nodes_from(_addPSMAttributes(conn))
         G.add_nodes_from(_addPeptideAttributes(conn))
         G.add_nodes_from(_addProteinAttributes(conn))
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         file_name = sys.argv[2]
     
     # build graph
-    G = buildInferenceGraph(database_file, add_psms = True)
+    G = buildInferenceGraph(database_file, add_psms = False, add_attributes = False)
     
     if (G is None):
         print("An error occurred during graph creation!")
