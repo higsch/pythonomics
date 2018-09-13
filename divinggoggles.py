@@ -15,6 +15,11 @@ import json
 database_file = "target_psmlookup.sql"
 file_name = "network.json"
 
+psm_alias = "_ps__"
+peptide_alias = "_pe__"
+protein_alias = "_pr__"
+protein_group_alias = "_pg__"
+
 def _create_connection(database_file):
     """ creates a database connection to the SQLite database
         specified by the db_file
@@ -39,7 +44,7 @@ def _fetchPSMs2Peptide(conn):
     cur.execute(query)
     psms_to_peptide = cur.fetchall()
     
-    return(psms_to_peptide)
+    return([(psm_alias + tuple[0], peptide_alias + tuple[1]) for tuple in psms_to_peptide])
     
 def _fetchPeptides2Proteins(conn):
     cur = conn.cursor()
@@ -53,7 +58,7 @@ def _fetchPeptides2Proteins(conn):
     cur.execute(query)
     peptides_to_proteins = cur.fetchall()
 
-    return(peptides_to_proteins)
+    return([(peptide_alias + tuple[0], protein_alias + tuple[1]) for tuple in peptides_to_proteins])
     
 def _fetchProteins2ProteinGroup(conn):
     cur = conn.cursor()
@@ -65,7 +70,7 @@ def _fetchProteins2ProteinGroup(conn):
     cur.execute(query)
     proteins_to_protein_group = cur.fetchall()
     
-    return(proteins_to_protein_group)
+    return([(protein_alias + tuple[0], protein_group_alias + tuple[1]) for tuple in proteins_to_protein_group])
 
 def buildInferenceNetwork(database_file = default_database_file):
     """ builds the JSON lookup and handles database connection
