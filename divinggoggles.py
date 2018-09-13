@@ -42,9 +42,8 @@ def _fetchPSMs2Peptide(conn):
             "INNER JOIN peptide_sequences " \
             "ON psms.pep_id = peptide_sequences.pep_id"
     cur.execute(query)
-    psms_to_peptide = cur.fetchall()
-    
-    return([(psm_alias + tuple[0], peptide_alias + tuple[1]) for tuple in psms_to_peptide])
+
+    return([(psm_alias + tuple[0], peptide_alias + tuple[1]) for tuple in cur.fetchall()])
     
 def _fetchPeptides2Proteins(conn):
     cur = conn.cursor()
@@ -56,9 +55,8 @@ def _fetchPeptides2Proteins(conn):
             "INNER JOIN peptide_sequences " \
             "ON psms.pep_id = peptide_sequences.pep_id"
     cur.execute(query)
-    peptides_to_proteins = cur.fetchall()
-
-    return([(peptide_alias + tuple[0], protein_alias + tuple[1]) for tuple in peptides_to_proteins])
+    
+    return([(peptide_alias + tuple[0], protein_alias + tuple[1]) for tuple in cur.fetchall()])
     
 def _fetchProteins2ProteinGroup(conn):
     cur = conn.cursor()
@@ -68,9 +66,38 @@ def _fetchProteins2ProteinGroup(conn):
             "INNER JOIN protein_group_master " \
             "ON protein_group_content.master_id = protein_group_master.master_id"
     cur.execute(query)
-    proteins_to_protein_group = cur.fetchall()
     
-    return([(protein_alias + tuple[0], protein_group_alias + tuple[1]) for tuple in proteins_to_protein_group])
+    return([(protein_alias + tuple[0], protein_group_alias + tuple[1]) for tuple in cur.fetchall()])
+
+def _addPSMAttributes(conn):
+    # empty
+    return()
+    
+def _addPeptideAttributes(conn):
+    # empty
+    return()
+
+def _addProteinAttributes(conn):
+    cur = conn.cursor()
+    
+    query = "SELECT protein_seq.protein_acc, protein_seq.sequence, prot_desc.description " \
+            "FROM protein_seq " \
+            "INNER JOIN prot_desc ON protein_seq.protein_acc = prot_desc.protein_acc"
+    attributes = [(protein_alias + tuple[0], {"sequence": tuple[1], "description": tuple[2]}) for tuple in cur.execute(query)]
+    
+    return(attributes)
+    
+def _addProteinGroupAttributes(conn):
+    cur = conn.cursor()
+    
+    query = "SELECT protein_group_master.protein_acc, " \
+            "protein_group_content.peptide_count, protein_group_content.psm_count " \
+            "FROM protein_group_master " \
+            "INNER JOIN protein_group_content " \
+            "ON protein_group_master.master_id = protein_group_content.master_id"
+    attributes = [(protein_group_alias + tuple[0], {"peptide_count": tuple[1], "psm_count": tuple[2]}) for tuple in cur.execute(query)]
+    
+    return(attributes)
 
 def buildInferenceNetwork(database_file = default_database_file):
     """ builds the JSON lookup and handles database connection
@@ -88,6 +115,12 @@ def buildInferenceNetwork(database_file = default_database_file):
     G.add_edges_from(_fetchPeptides2Proteins(conn))
     G.add_edges_from(_fetchPeptides2Proteins(conn))
     G.add_edges_from(_fetchProteins2ProteinGroup(conn))
+    
+    # add meta information to nodes
+    G.add_nodes_from(_addPSMAttributes(conn))
+    G.add_nodes_from(_addPeptideAttributes(conn))
+    G.add_nodes_from(_addProteinAttributes(conn))
+    G.add_nodes_from(_addProteinGroupAttributes(conn))
     
     # close database connection
     conn.close()
@@ -115,12 +148,12 @@ if __name__ == "__main__":
     G = buildInferenceNetwork(database_file)
     if (G is None):
         print("An error occurred during graph creation!")
-        return(1)
+        exit(1)
     
     # save graph
     if (saveNetwork(G, file_name)):
         print("Graph was saved to " + file_name + ".")
-        return(0)
+        exit(0)
     else:
         print("An error occurred during saving!")
-        return(1)
+        exit(1)
