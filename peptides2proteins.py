@@ -32,8 +32,8 @@ def _fetchPeptides2Proteins(conn):
             "ON protein_psm.psm_id = psms.psm_id " \
             "INNER JOIN peptide_sequences " \
             "ON psms.pep_id = peptide_sequences.pep_id"
-    cur.execute(query)
-    return(cur.fetchall())
+    for row in cur.execute(query):
+        yield row
 
 def buildLookup(database_file = database_file):
     # connect to database and fetch relevant linkages
@@ -64,5 +64,5 @@ if __name__ == "__main__":
     
     # save
     with open(file_name, 'w') as f:
-        json.dump(lookup, f)
-    
+        json.dump(lookup, f)    
+        
