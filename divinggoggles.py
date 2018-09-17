@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Creates a graph-based lookup table linking protein groups to proteins to peptides to PSms.
+# Creates a graph-based lookup linking protein groups to proteins to peptides to PSms.
 #
 #
 # Matthias Stahl, 2018
@@ -13,7 +13,7 @@ from networkx.readwrite import json_graph
 import json
 
 database_file = "target_psmlookup.sql"
-file_name = "network.json"
+file_name = "graph.json"
 
 psm_alias = "_ps__"
 peptide_alias = "_pe__"
@@ -95,7 +95,7 @@ def _addProteinGroupAttributes(conn):
     
     return(attributes)
 
-def buildInferenceGraph(database_file = database_file, add_psms = False, add_attributes = False):
+def buildInferenceGraph(database_file = database_file, add_psms = False, add_protein_groups = False, add_attributes = False):
     # generate new graph
     G = nx.Graph()
     
@@ -107,7 +107,9 @@ def buildInferenceGraph(database_file = database_file, add_psms = False, add_att
         G.add_edges_from(_fetchPSMs2Peptide(conn))
         
     G.add_edges_from(_fetchPeptides2Proteins(conn))
-    G.add_edges_from(_fetchProteins2ProteinGroup(conn))
+    
+    if (add_protein_groups):
+        G.add_edges_from(_fetchProteins2ProteinGroup(conn))
     
     # add meta information to nodes
     if (add_attributes == True):
@@ -139,7 +141,7 @@ if __name__ == "__main__":
         file_name = sys.argv[2]
     
     # build graph
-    G = buildInferenceGraph(database_file, add_psms = False, add_attributes = False)
+    G = buildInferenceGraph(database_file, add_psms = False, add_protein_groups = False, add_attributes = False)
     
     if (G is None):
         print("An error occurred during graph creation!")
