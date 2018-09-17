@@ -8,9 +8,8 @@
 import sys
 import sqlite3
 from sqlite3 import Error
-import networkx as nx
-from networkx.readwrite import json_graph
 import json
+import gzip
 
 database_file = "target_psmlookup.sql"
 file_name = "graph.json"
@@ -64,5 +63,10 @@ if __name__ == "__main__":
     
     # save
     with open(file_name, 'w') as f:
-        json.dump(lookup, f)    
+        json.dump(lookup, f)
+        
+    json_str = json.dumps(lookup) + "\n"
+    json_bytes = json_str.encode('utf-8')
+    with gzip.GzipFile(file_name + ".gz", 'w') as f:
+        f.write(json_bytes)  
         
