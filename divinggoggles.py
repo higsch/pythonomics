@@ -124,7 +124,7 @@ def buildInferenceGraph(database_file = database_file, add_psms = False, add_pro
     return(G)
     
 def saveGraph(G, file_name):
-    data = json_graph.node_link_data(G)
+    data = json_graph.adjacency_data(G)
     
     try:
         with open(file_name, 'w') as outfile:

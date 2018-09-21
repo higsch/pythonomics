@@ -42,6 +42,8 @@ def buildLookup(database_file = database_file):
     lookup = {}
     for peptide, protein in _fetchPeptides2Proteins(conn):
         if (protein in lookup.keys()):
+            if (peptide in lookup[protein]):
+                continue
             lookup[protein].append(peptide)
         else:
             lookup[protein] = [peptide]
