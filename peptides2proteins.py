@@ -57,13 +57,20 @@ def buildLookup(database_file = database_file):
 
 def buildD3Json(lookup):
     links = []
-    nodes = []
-    nodes.extend([*lookup])
-    nodes.extend([y for x in [*lookup.values()] for y in x])
-    nodes = [*set(nodes)]
+    nodes_list = []
+    nodes_list.extend([*lookup])
+    nodes_list.extend([y for x in [*lookup.values()] for y in x])
+    nodes_list = [*set(nodes_list)]
+    
+    i = 0
+    nodes_lookup = {}
+    for item in nodes_list:
+        nodes_lookup[item] = i
+        i += 1
 
     for protein, peptides in lookup.items():
-        links.append({"source": nodes.index(protein), "target": nodes.index(peptide)})
+        for peptide in peptides:
+            links.append({"source": nodes_lookup[protein], "target": nodes_lookup[peptide]})
         
     nodes = [{"id": item} for item in nodes]
         
