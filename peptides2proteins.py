@@ -10,6 +10,7 @@ import sqlite3
 from sqlite3 import Error
 import json
 import gzip
+from itertools import chain
 
 database_file = "target_psmlookup.sql"
 file_name = "inference.json"
@@ -57,12 +58,14 @@ def buildLookup(database_file = database_file):
 def buildD3Json(lookup):
     links = []
     nodes = []
-    nodes.extend([[*lookup], lookup.values()])
-    nodes = set(nodes)
-    
-    nodes[0]
+    nodes.extend([*lookup])
+    nodes.extend([y for x in [*lookup.values()] for y in x])
+    nodes = [*set(nodes)]
+
     for protein, peptides in lookup.items():
         links.append({"source": nodes.index(protein), "target": nodes.index(peptide)})
+        
+    nodes = [{"id": item} for item in nodes]
         
     return({"nodes": nodes, "links": links})
 
