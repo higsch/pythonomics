@@ -13,7 +13,7 @@ from networkx.readwrite import json_graph
 import json
 
 database_file = "target_psmlookup.sql"
-file_name = "graph.json"
+file_name = "inference.json"
 
 psm_alias = "_ps__"
 peptide_alias = "_pe__"
@@ -78,8 +78,7 @@ def _addProteinAttributes(conn):
     query = "SELECT protein_seq.protein_acc, protein_seq.sequence, prot_desc.description " \
             "FROM protein_seq " \
             "INNER JOIN prot_desc ON protein_seq.protein_acc = prot_desc.protein_acc"
-    #attributes = [(protein_alias + tuple[0], {"sequence": tuple[1], "description": tuple[2]}) for tuple in cur.execute(query)]
-    attributes = [(protein_alias + row[0], {"sequence": "", "description": row[2]}) for row in cur.execute(query)]
+    attributes = [(protein_alias + tuple[0], {"sequence": tuple[1]}) for tuple in cur.execute(query)]
     
     return(attributes)
     
@@ -141,7 +140,7 @@ if __name__ == "__main__":
         file_name = sys.argv[2]
     
     # build graph
-    G = buildInferenceGraph(database_file, add_psms = False, add_protein_groups = False, add_attributes = False)
+    G = buildInferenceGraph(database_file, add_psms = False, add_protein_groups = False, add_attributes = True)
     
     if (G is None):
         print("An error occurred during graph creation!")
